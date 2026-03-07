@@ -1,0 +1,8 @@
+# Streamlit UI and dependencies for the recommendation demo.
+# PyTorch/torchvision are assumed from the existing project (e.g. venv).
+torch>=2.0
+torchvision>=0.15
+numpy>=1.24
+scikit-learn>=1.2
+Pillow>=9.0
+streamlit>=1.28
