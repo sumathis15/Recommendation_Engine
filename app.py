@@ -77,18 +77,15 @@ def main():
     indices = recommender.recommend(embedding, top_k=5)
 
     st.subheader("Top 5 recommended images")
-    # Display recommended images from data/sample_images/{idx}.png; caption by class name
+    # Display recommended images from data/sample_images/{idx}.png without classification labels
     cols = st.columns(5)
     for i, idx in enumerate(indices):
         img_path = os.path.join(SAMPLE_IMAGES_DIR, f"{idx}.png")
-        label_id = recommender.labels[idx]
-        caption = CLASS_NAMES[label_id] if 0 <= label_id < len(CLASS_NAMES) else f"Class {label_id}"
         with cols[i]:
             if os.path.isfile(img_path):
                 rec_img = Image.open(img_path)
-                st.image(rec_img, caption=caption, use_container_width=True)
+                st.image(rec_img, use_container_width=True)
             else:
-                st.caption(caption)
                 st.warning(f"Image not found: {img_path}. Run the export script to populate data/sample_images/.")
 
 
