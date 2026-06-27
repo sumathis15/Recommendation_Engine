@@ -16,3 +16,18 @@ build/
 .vscode/
 *.swp
 *.swo
+
+# --- Generated / large assets (do not commit) ---
+# Train once locally; scripts recreate these files.
+models/
+features/
+
+# Fashion-MNIST downloads (torchvision fetches on first use)
+data/FashionMNIST/
+
+# Catalog PNGs — 60k files; run: python scripts/export_sample_images.py
+data/sample_images/*.png
+
+# Optional local upload demos (regenerate: scripts/export_test_upload_images.py)
+data/test_upload/*.png
+
