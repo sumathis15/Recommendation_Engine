@@ -17,17 +17,8 @@ build/
 *.swp
 *.swo
 
-# --- Generated / large assets (do not commit) ---
-# Train once locally; scripts recreate these files.
-models/
-features/
-
-# Fashion-MNIST downloads (torchvision fetches on first use)
+# Fashion-MNIST raw download (70k images) — run: python scripts/download_fashion_mnist.py
 data/FashionMNIST/
 
-# Catalog PNGs — 60k files; run: python scripts/export_sample_images.py
-data/sample_images/*.png
-
-# Optional local upload demos (regenerate: scripts/export_test_upload_images.py)
-data/test_upload/*.png
-
+# Legacy catalog PNG exports — do not commit; app reads Fashion-MNIST train directly
+data/sample_images/

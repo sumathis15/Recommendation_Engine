@@ -12,6 +12,17 @@ from torchvision import models
 EMBEDDING_DIM = 512
 
 
+def load_classifier_model(model_path: str, device: torch.device, num_classes: int = 10) -> nn.Module:
+    """Load ResNet18 with the trained classification head for label prediction."""
+    model = models.resnet18(weights=None)
+    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    state_dict = torch.load(model_path, map_location=device, weights_only=True)
+    model.load_state_dict(state_dict, strict=True)
+    model = model.to(device)
+    model.eval()
+    return model
+
+
 def load_embedding_model(model_path: str, device: torch.device) -> nn.Module:
     """
     Load ResNet18 from a saved state_dict, replace the final fc with Identity(),

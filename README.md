@@ -1,31 +1,51 @@
 # Fashion Image Recommendation Demo
 
-Content-based image recommendation using a trained ResNet18 model and precomputed embeddings.
+Content-based image recommendation using a trained ResNet18 model and precomputed embeddings on Fashion-MNIST.
 
-## About the notebook (`FinalProject_1.instructions.ipynb`)
+**Full learning guide:** [Image Recommendation Guide.md](Image%20Recommendation%20Guide.md)
 
-The model and features used by this app were produced by the Jupyter notebook in this repo. Here’s what the notebook does:
+## What this project does
 
-1. **Data** – Loads Fashion-MNIST (train/test), resizes to 224×224, converts grayscale to 3 channels, and uses a **subset of 8,000 training images** for speed.
-2. **Model** – Builds a **pretrained ResNet18**, freezes the backbone, and replaces the final layer with a **Linear(512, 10)** head for the 10 fashion classes. It trains only that head for 2 epochs (or loads existing `fashion_model.pth` if present).
-3. **Evaluation** – Reports test accuracy (e.g. ~81%).
-4. **Feature extraction** – Uses the backbone (all layers except the final classifier) to compute **512‑dim embeddings** for each of the 8,000 training images, then saves them to `features/features.npy` and `features/labels.npy`.
-5. **Recommendation** – Defines `recommend(index, top_k=5)`: takes the embedding at `index`, computes **cosine similarity** to all stored embeddings, and returns the **top‑5** most similar indices (excluding the query itself).
+1. **Train** ResNet18 on 60k Fashion-MNIST images (transfer learning, two phases).
+2. **Extract** 512-dim embeddings → `features/features.npy` + `features/labels.npy`.
+3. **Recommend** via cosine similarity (notebook + Streamlit app).
+4. **Upload** an image in the app → top-5 visually similar items from the 60k catalog.
 
-The **Streamlit app** does not retrain or change any of this. It loads the same saved model and feature files, replaces the final layer with `Identity()` to get 512‑dim embeddings for **uploaded images**, and uses the same cosine-similarity logic to show the top‑5 recommendations with human‑readable class names (T-shirt, Dress, Bag, etc.).
+Current model: **~92.8%** test accuracy. Catalog: **60,000** training images.
 
 ## Prerequisites
 
 - Python 3.8+
-- Existing project assets (unchanged):
-  - `models/fashion_model.pth`
-  - `features/features.npy`
-  - `features/labels.npy`
-  - `data/FashionMNIST/raw/` (Fashion-MNIST data)
+- **In this repo (git):**
+  - `models/fashion_model.pth` — trained model
+  - `features/features.npy`, `features/labels.npy` — 60k catalog embeddings (the “search index”)
+  - `data/test_upload/` — 10 small PNGs to try uploads in the UI
+- **On your machine (not in git):**
+  - `data/FashionMNIST/` — full dataset (**required** for the app to show recommendation images)
+
+## Data: what you need locally (and why)
+
+The app finds closest matches using **`features.npy`** (in git), but it **displays** those matches by loading the matching **training** image from Fashion-MNIST on disk.
+
+```
+Upload your image
+    → embedding compared to features.npy (60k vectors, in git)
+    → top 5 catalog indices e.g. [882, 4271, ...]
+    → app loads Fashion-MNIST TRAIN images at those indices to show you the pictures
+```
+
+| Data | Count | In git? | Required for app? | Purpose |
+|------|-------|---------|-------------------|---------|
+| **Train images** | 60,000 | No — download | **Yes** | Recommendation catalog display; row `i` in `features.npy` = train image `i` |
+| **Test images** | 10,000 | No — download | No (for app UI) | Accuracy / `verify_training.py` only; not in the recommendation catalog |
+| **`features.npy`** | 60k rows | Yes | Yes | Precomputed embeddings used for similarity search |
+| **`test_upload/`** | 10 PNGs | Yes | Optional | Convenience files to drag into the uploader |
+
+**You do not push the 70k images to git** — they are large and downloadable. Only embeddings + model are stored in the repo.
 
 ## Setup
 
-1. Create and activate a virtual environment (optional if you already use one):
+1. Virtual environment (optional):
 
    ```bash
    python -m venv venv
@@ -38,39 +58,54 @@ The **Streamlit app** does not retrain or change any of this. It loads the same 
    pip install -r requirements.txt
    ```
 
-3. Populate sample images for the UI (one-time). From the project root:
+3. **Download Fashion-MNIST locally** (one-time, ~70k images — **not pushed to git**):
 
    ```bash
-   python scripts/export_sample_images.py
+   python scripts/download_fashion_mnist.py
    ```
 
-   This writes images to `data/sample_images/` so that recommendation indices match filenames (`0.png`, `1.png`, …).
+   This downloads the official dataset into `data/FashionMNIST/raw/`:
+   - **60,000 train images** — needed so the app can **show** the top-5 matches
+   - **10,000 test images** — used for accuracy checks, not for recommendations
 
-4. Optional: export test images for uploads:
+   **Alternative:** skip this step and the app will auto-download train data on first run (`download=True`). Running the script upfront is clearer and fetches both splits.
 
-   ```bash
-   python scripts/export_test_upload_images.py
+   **Windows (PowerShell), from project root:**
+
+   ```powershell
+   .\venv\Scripts\python scripts\download_fashion_mnist.py
    ```
 
-   Test images are saved to `data/test_upload/`.
+   After download, you should have files like:
+   `data/FashionMNIST/raw/train-images-idx3-ubyte` and `t10k-images-idx3-ubyte`.
 
 ## Run the app
-
-From the project root:
 
 ```bash
 streamlit run app.py
 ```
 
-Then open the URL shown in the terminal (e.g. http://localhost:8501). Upload an image to see the top-5 recommended images from the catalog (with class names like T-shirt, Dress, Bag).
+Upload an image (try `data/test_upload/test_sneaker.png`) to see top-5 matches from the catalog.
 
-## Project layout (new files only)
+## Retrain (optional)
 
-- `app.py` – Streamlit entry point
-- `utils/model.py` – ResNet18 embedding model loader
-- `utils/preprocessing.py` – Image preprocessing (224×224, ImageNet norm)
-- `utils/recommender.py` – Cosine-similarity recommender
-- `scripts/export_sample_images.py` – Exports training images to `data/sample_images/`
-- `scripts/export_test_upload_images.py` – Exports test images to `data/test_upload/`
-- `data/sample_images/` – Sample images used for display (populated by the script above)
-- `data/test_upload/` – Optional test images for upload (populated by the script above)
+**Notebook:** `FinalProject_1.ipynb` — set `FORCE_RETRAIN = True` to retrain.
+
+**Script:** `python scripts/train_model.py`
+
+**Verify:** `python scripts/verify_training.py`
+
+## Project layout
+
+| Path | Purpose |
+|------|---------|
+| `FinalProject_1.ipynb` | Train, evaluate, visualize |
+| `app.py` | Streamlit demo |
+| `utils/` | Model loading, preprocessing, recommender |
+| `models/fashion_model.pth` | Trained weights (in repo) |
+| `features/*.npy` | Catalog embeddings + labels (in repo) |
+| `data/FashionMNIST/` | Downloaded dataset (local only) |
+| `data/test_upload/` | Demo upload images (in repo) |
+| `scripts/download_fashion_mnist.py` | Download 70k images |
+| `scripts/train_model.py` | Full training pipeline |
+| `scripts/verify_training.py` | Sanity-check artifacts |
