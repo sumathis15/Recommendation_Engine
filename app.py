@@ -84,14 +84,6 @@ def main():
             "3. Pick the 5 highest cosine similarity scores\n"
             "4. Display images from Fashion-MNIST train set by catalog index"
         )
-        use_category_boost = st.checkbox(
-            "Boost same category",
-            value=False,
-            help="Optional: nudge scores toward the detected class (T-shirt, Dress, etc.). "
-            "Off = pure visual similarity only.",
-        )
-        boost = 0.15 if use_category_boost else 0.0
-
     try:
         classifier, embedder, device = get_models()
         recommender, n_items = get_features_and_recommender()
@@ -115,14 +107,11 @@ def main():
     predicted_label = predict_label(classifier, tensor, device)
     st.caption(f"Detected category: **{CLASS_NAMES[predicted_label]}**")
     embedding = get_embedding(embedder, tensor, device)
-    label_for_ranking = predicted_label if use_category_boost else None
-    results = recommender.recommend_with_scores(
-        embedding, top_k=5, query_label=label_for_ranking, same_class_boost=boost
-    )
+    results = recommender.recommend_with_scores(embedding, top_k=5)
 
     st.subheader("Top 5 recommended images")
     cols = st.columns(5)
-    for col, (idx, raw_score, rank_score) in zip(cols, results):
+    for col, (idx, score) in zip(cols, results):
         with col:
             if idx < len(catalog):
                 rec_img, _ = catalog[idx]
@@ -130,7 +119,7 @@ def main():
                 st.image(rec_img, use_container_width=True)
                 st.caption(
                     f"{CLASS_NAMES[label]} · catalog #{idx} · "
-                    f"visual match {raw_score:.3f}"
+                    f"visual match {score:.3f}"
                 )
             else:
                 st.warning(f"Catalog index {idx} out of range.")

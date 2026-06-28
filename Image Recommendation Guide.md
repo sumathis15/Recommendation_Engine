@@ -178,9 +178,8 @@ flowchart LR
     C --> D[512-dim embedding]
     D --> E[L2 normalize]
     E --> F[Cosine similarity vs catalog]
-    F --> G[Optional same-class boost]
-    G --> H[Top 5 indices]
-    H --> I[Show Fashion-MNIST train image by index]
+    F --> G[Top 5 indices]
+    G --> H[Show Fashion-MNIST train image by index]
 ```
 
 ---
@@ -490,7 +489,6 @@ These two files are created **at the same time** during feature extraction. They
 
 **Used for:**
 - Showing class names under recommendations in the app
-- Optional same-category boost (sidebar checkbox)
 - Notebook metrics (e.g. recommendation hit rate)
 
 **Not used for:** picking which images are similar. Search uses `features.npy` only.
@@ -524,7 +522,7 @@ All three must refer to the **same** training image.
 |---|----------------|--------------|
 | Stores | 512 floats (look) | 1 integer (category) |
 | Search? | **Yes** | No |
-| Display / boost? | No | **Yes** |
+| Display? | No | **Yes** |
 | Analogy | Face fingerprint | Name tag on the person |
 
 ---
@@ -667,9 +665,8 @@ L2 normalization places every arrow on the **unit circle** (length 1). We only c
 2. **Get its 512-dim embedding** — run through the trained backbone
 3. **L2-normalize** the query embedding
 4. **Compare to all 60,000 catalog embeddings** using cosine similarity
-5. **Optionally apply same-class boost** (app sidebar; off by default)
-6. **Return top 5** highest-scoring indices
-7. **Load Fashion-MNIST train image by catalog index** to display results
+5. **Return top 5** highest-scoring indices
+6. **Load Fashion-MNIST train image by catalog index** to display results
 
 ### Recommendations are NOT based on filenames
 
@@ -689,20 +686,6 @@ Measures how aligned two embedding directions are. The app shows this as **visua
 - **Closer to 0.0** → less similar
 
 Implemented via `sklearn.metrics.pairwise.cosine_similarity`.
-
-### Same-class boost (optional)
-
-In the **app**, sidebar checkbox **“Boost same category”** (default: **off**).
-
-When on:
-
-```
-ranking_score = cosine_similarity + 0.15   (if catalog item has same class as detected upload)
-```
-
-When off: **pure visual similarity** from `features.npy` only.
-
-In the **notebook**, `recommend()` can use `same_class_boost=0.15` by default — you can set it to `0` for pure visual matching.
 
 ### Excluding self-match (notebook only)
 
@@ -792,7 +775,7 @@ Provides a simple web UI: upload an image → see top 5 recommendations with **v
 
 ### Sidebar
 
-Explains the matching pipeline and offers **“Boost same category”** (optional, default off).
+Explains the matching pipeline (embed → cosine similarity → top 5).
 
 ### Internal flow
 
@@ -813,7 +796,7 @@ sequenceDiagram
     C->>S: Predicted class (e.g. Sneaker)
     P->>E: Same tensor
     E->>S: 512-dim embedding (L2-normalized)
-    S->>R: embedding + optional label boost
+    S->>R: embedding
     R->>F: Cosine similarity vs 60k vectors
     R->>S: Top 5 indices + scores
     S->>FM: Load train image by catalog index
@@ -937,14 +920,6 @@ batch_size = 64
 
 Images processed per optimizer step. Higher = faster but more RAM.
 
-### `same_class_boost`
-
-```python
-same_class_boost = 0.15   # notebook default in recommend()
-```
-
-In the **app**, controlled by sidebar checkbox (default **off**). When on, nudges ranking toward the detected class. When off, ranking uses cosine similarity on L2-normalized embeddings only.
-
 ---
 
 ## 18. How to run everything
@@ -1048,7 +1023,7 @@ This project runs on CPU. Change to `"cuda"` only if you have a compatible NVIDI
 2. **Extract** a L2-normalized 512-number fingerprint for every **training** image → `features.npy`.
 3. **Save** class IDs alongside → `labels.npy` (for labels/captions, not search).
 4. When a user uploads an image, **compute its fingerprint** the same way (including L2 normalize).
-5. **Find the 5 closest fingerprints** in the catalog (cosine similarity; optional category boost).
+5. **Find the 5 closest fingerprints** in the catalog (cosine similarity).
 6. **Show those 5 images** from Fashion-MNIST train set by index.
 
 That is the entire system.
